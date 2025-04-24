@@ -6,7 +6,7 @@ Task's queue system design, implemented with Golang and RabbitMQ
 
 ## Todo
 
-- [ ] Replace scheme's Kafka with RabbitMQ
+- [X] Replace scheme's Kafka with RabbitMQ
 - [ ] Implement simple N Workers
 - [ ] Connect workers to RabbitMQ
 - [ ] Create API for task submission
