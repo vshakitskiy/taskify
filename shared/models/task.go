@@ -17,6 +17,11 @@ func NewTask(message string, timeout int) *Task {
 	}
 }
 
+func (t *Task) ToJSON() []byte {
+	b, _ := json.Marshal(t)
+	return b
+}
+
 func TaskFromJSON(b []byte) (*Task, error) {
 	task := new(Task)
 	err := json.Unmarshal(b, task)
@@ -24,7 +29,7 @@ func TaskFromJSON(b []byte) (*Task, error) {
 		return nil, err
 	}
 
-	if task.Timeout < 100 {
+	if task.Timeout < 1 {
 		return nil, fmt.Errorf("Invalid timeout")
 	}
 

@@ -12,7 +12,7 @@ type RabbitMQ struct {
 	Methods      *rmq.RabbitMQ
 	TaskQueue    amqp.Queue
 	ResultsQueue amqp.Queue
-	TasksCh      <-chan amqp.Delivery
+	ResultsCh    <-chan amqp.Delivery
 }
 
 func NewMQ(url string, prefetchCount int) (*RabbitMQ, error) {
@@ -21,7 +21,7 @@ func NewMQ(url string, prefetchCount int) (*RabbitMQ, error) {
 		return nil, fmt.Errorf("Failed to connect to RabbitMQ: %s", err)
 	}
 
-	tasksQueue, err := mq.DeclareQueue("tasks")
+	resultsQueue, err := mq.DeclareQueue("results")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to declare a queue: %s", err)
 	}
@@ -31,12 +31,12 @@ func NewMQ(url string, prefetchCount int) (*RabbitMQ, error) {
 		return nil, fmt.Errorf("Failed to set QoS: %s", err)
 	}
 
-	tasksChannel, err := mq.ConsumeQueue(tasksQueue)
+	tasksChannel, err := mq.ConsumeQueue(resultsQueue)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to consume a queue: %s", err)
 	}
 
-	resultsQueue, err := mq.DeclareQueue("results")
+	tasksQueue, err := mq.DeclareQueue("tasks")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to declare a queue: %s", err)
 	}
@@ -45,6 +45,6 @@ func NewMQ(url string, prefetchCount int) (*RabbitMQ, error) {
 		Methods:      mq,
 		TaskQueue:    tasksQueue,
 		ResultsQueue: resultsQueue,
-		TasksCh:      tasksChannel,
+		ResultsCh:    tasksChannel,
 	}, nil
 }

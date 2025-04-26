@@ -3,49 +3,60 @@ package workers
 import (
 	"context"
 	"fmt"
-	"shared/models"
 	"sync"
 	"time"
+
+	"app.shared/models"
 
 	"app.workers/internal/mq"
 	"github.com/fatih/color"
 )
 
 type Workers struct {
-	mq     *mq.RabbitMQ
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     *sync.WaitGroup
-	amount int
+	mq            *mq.RabbitMQ
+	ctx           context.Context
+	cancel        context.CancelFunc
+	publishCtx    context.Context
+	publishCancel context.CancelFunc
+	wg            *sync.WaitGroup
+	amount        int
 }
 
 func NewWorkers(mq *mq.RabbitMQ, amount int) *Workers {
 	ctx, cancel := context.WithCancel(context.Background())
+	publishCtx, publishCancel := context.WithTimeout(
+		context.Background(),
+		5*time.Second,
+	)
 	return &Workers{
-		mq:     mq,
-		wg:     &sync.WaitGroup{},
-		ctx:    ctx,
-		cancel: cancel,
-		amount: amount,
+		mq:            mq,
+		wg:            &sync.WaitGroup{},
+		ctx:           ctx,
+		cancel:        cancel,
+		publishCtx:    publishCtx,
+		publishCancel: publishCancel,
+		amount:        amount,
 	}
 }
 
 func (w *Workers) Run() {
 	for i := 0; i < w.amount; i++ {
 		w.wg.Add(1)
-		go worker(i, w.wg, w.ctx, w.mq)
+		go worker(i, w.wg, w.ctx, w.publishCtx, w.mq)
 	}
 }
 
 func (w *Workers) Stop() {
 	w.cancel()
 	w.wg.Wait()
+	w.publishCancel()
 }
 
 func worker(
 	id int,
 	wg *sync.WaitGroup,
 	ctx context.Context,
+	pubCtx context.Context,
 	mq *mq.RabbitMQ,
 ) {
 	color.Blue("Starting worker %d...", id)
@@ -55,18 +66,22 @@ func worker(
 		case del := <-mq.TasksCh:
 			task, err := models.TaskFromJSON(del.Body)
 			if err != nil {
-				color.Red("Failed to unmarshal task: %s", err)
+				color.Red("[%d] Failed to unmarshal task %s: %s", id, del.CorrelationId, err)
 
 				res := models.NewErrorTaskResponse("ErrInvalidPayload")
-				err = mq.Methods.Publish(
-					ctx,
+				if err = mq.Methods.Publish(
+					pubCtx,
 					mq.ResultsQueue,
 					res.ToJSON(),
 					&del.CorrelationId,
 					&del.ReplyTo,
-				)
-				if err != nil {
-					color.Red("Failed to publish a message: %s", err)
+				); err != nil {
+					color.Red(
+						"[%d] Failed to publish a message (ID: %s): %s",
+						id,
+						del.CorrelationId,
+						err,
+					)
 					del.Nack(false, false)
 					continue
 				}
@@ -74,22 +89,25 @@ func worker(
 				del.Ack(false)
 				continue
 			}
+			fmt.Printf(
+				"[%d]: %s - %dms (ID: %s)\n",
+				id,
+				task.Message,
+				task.Timeout,
+				del.CorrelationId,
+			)
 
-			rand := time.Duration(task.Timeout) * time.Millisecond
+			rand := time.Duration(task.Timeout) * time.Second
 			time.Sleep(rand)
-
-			fmt.Printf("Worker %d: Received %s (ID: %s)\n", id, task.Message, del.CorrelationId)
-
 			res := models.NewSuccessTaskResponse(task.Message)
 
-			err = mq.Methods.Publish(
-				ctx,
+			if err = mq.Methods.Publish(
+				pubCtx,
 				mq.ResultsQueue,
 				res.ToJSON(),
 				&del.CorrelationId,
 				&del.ReplyTo,
-			)
-			if err != nil {
+			); err != nil {
 				color.Red("Failed to publish a message: %s", err)
 				del.Nack(false, false)
 				continue

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package tasks;
+
+option go_package = "app.server/pkg/pb;pb";
+
+service TasksService {
+  rpc ExecuteTask (ExecuteTaskRequest) returns (ExecuteTaskResponse) {}
+}
+
+message ExecuteTaskRequest {
+  int64 duration_seconds = 1;
+  string message = 2;
+}
+
+message ExecuteTaskResponse {
+  string message = 1;
+  string correlation_id = 2;
+  int64 worker_num = 3;
+}

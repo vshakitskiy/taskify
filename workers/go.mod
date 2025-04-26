@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/fatih/color v1.18.0
 	github.com/rabbitmq/amqp091-go v1.10.0
-	shared v0.0.0
+	app.shared v0.0.0
 )
 
 require (
@@ -14,4 +14,4 @@ require (
 	golang.org/x/sys v0.25.0 // indirect
 )
 
-replace shared => ../shared
+replace app.shared => ../shared

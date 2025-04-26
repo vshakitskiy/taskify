@@ -1,4 +1,4 @@
-module common
+module app.shared
 
 go 1.24.2
 
