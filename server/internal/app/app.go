@@ -34,6 +34,7 @@ func NewApp() *App {
 
 func (a *App) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	color.Blue("Connecting to RabbitMQ...")
 	mq, err := mq.NewMQ("amqp://admeanie:shabi@localhost:5672/", 3)
@@ -59,11 +60,13 @@ func (a *App) Run() error {
 		fmt.Println()
 
 		select {
+		case <-ctx.Done():
+			color.Blue("Closing results queue listener...")
+			break
 		case del := <-mq.ResultsCh:
-			fmt.Println(del.CorrelationId, string(del.Body))
-
 			resCh, ok := tasksRepository.GetTaskResponse(del.CorrelationId)
 			if !ok {
+				fmt.Println("!", del.CorrelationId, string(del.Body))
 				fmt.Println("not found")
 				del.Ack(false)
 			} else {
@@ -73,8 +76,6 @@ func (a *App) Run() error {
 				resCh <- taskResponse
 				del.Ack(false)
 			}
-		case <-ctx.Done():
-			color.Blue("Closing results queue listener...")
 		}
 	}()
 
@@ -93,17 +94,15 @@ func (a *App) Run() error {
 		}
 	}()
 
-	return a.gracefulShutdown(cancel)
+	return a.gracefulShutdown()
 }
 
-func (a *App) gracefulShutdown(cancelCtx context.CancelFunc) error {
+func (a *App) gracefulShutdown() error {
 	shutdownChan := make(chan os.Signal, 1)
 	signal.Notify(shutdownChan, syscall.SIGINT, syscall.SIGTERM)
 	<-shutdownChan
 	color.Red("\n\nShutdown signal received...")
 	fmt.Println()
-
-	cancelCtx()
 
 	color.Blue("Closing RabbitMQ connections...")
 	a.mq.Methods.Close()
