@@ -1,0 +1,8 @@
+server:
+  grpc_port: 50000
+  queue_size: 60
+task:
+  max_duration: 30
+  min_duration: 1
+workers:
+  amount: 5

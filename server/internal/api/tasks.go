@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"fmt"
 
+	"app.server/internal/config"
 	"app.server/internal/service"
 	"app.server/pkg/pb"
 	"google.golang.org/grpc/codes"
@@ -24,8 +26,15 @@ func (h *TasksServiceHandler) ExecuteTask(
 	ctx context.Context,
 	req *pb.ExecuteTaskRequest,
 ) (*pb.ExecuteTaskResponse, error) {
-	if req.DurationSeconds < 1 || req.DurationSeconds > 30 {
-		return nil, status.Error(codes.InvalidArgument, "duration must be in a range of 1-30 seconds")
+	if req.DurationSeconds < int64(config.Config.Task.MinDuration) || req.DurationSeconds > int64(config.Config.Task.MaxDuration) {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			fmt.Sprintf(
+				"duration must be in a range of %d-%d seconds",
+				config.Config.Task.MinDuration,
+				config.Config.Task.MaxDuration,
+			),
+		)
 	}
 
 	if req.Message == "" {

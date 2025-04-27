@@ -11,11 +11,13 @@ import (
 	"time"
 
 	"app.server/internal/api"
+	"app.server/internal/config"
 	"app.server/internal/mq"
 	"app.server/internal/repository"
 	"app.server/internal/service"
 	"app.server/pkg/pb"
 	"app.shared/models"
+	"app.shared/pkg/env"
 	"github.com/fatih/color"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -29,7 +31,7 @@ type App struct {
 
 func NewApp() *App {
 	return &App{
-		port: "50000",
+		port: config.Config.Server.GRPCPort,
 	}
 }
 
@@ -37,7 +39,10 @@ func (a *App) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	color.Blue("Connecting to RabbitMQ...")
-	mq, err := mq.NewMQ("amqp://admeanie:shabi@localhost:5672/", 3)
+	mq, err := mq.NewMQ(env.GetDefaultEnv(
+		"RABBITMQ_URL",
+		"amqp://admeanie:shabi@localhost:5672/",
+	), config.Config.Workers.Amount)
 	if err != nil {
 		cancel()
 		return err

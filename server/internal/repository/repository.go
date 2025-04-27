@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"app.server/internal/config"
 	"app.shared/models"
 )
 
@@ -21,7 +22,7 @@ func NewTasksRepository() *TasksRepository {
 func (r *TasksRepository) AddTaskResponse(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if len(r.tasks) >= 50 {
+	if len(r.tasks) >= config.Config.Server.QueueSize {
 		return fmt.Errorf("too many tasks")
 	}
 	r.tasks[id] = make(chan models.TaskResponse, 1)

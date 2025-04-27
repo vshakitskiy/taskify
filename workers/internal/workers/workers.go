@@ -65,7 +65,7 @@ func worker(
 		case del := <-mq.TasksCh:
 			task, err := models.TaskFromJSON(del.Body)
 			if err != nil {
-				color.Red("[%d] Failed to unmarshal task %s: %s", id, del.CorrelationId, err)
+				color.Red("[W%d] Failed to unmarshal task %s: %s", id, del.CorrelationId, err)
 
 				res := models.NewErrorTaskResponse(id, "ErrInvalidPayload")
 				if err = mq.Methods.Publish(
@@ -76,7 +76,7 @@ func worker(
 					&del.ReplyTo,
 				); err != nil {
 					color.Red(
-						"[%d] Failed to publish a message (ID: %s): %s",
+						"[W%d] Failed to publish a message (ID: %s): %s",
 						id,
 						del.CorrelationId,
 						err,
@@ -95,8 +95,7 @@ func worker(
 				task.Timeout,
 				del.CorrelationId)
 
-			rand := time.Duration(task.Timeout) * time.Second
-			time.Sleep(rand)
+			time.Sleep(time.Duration(task.Timeout) * time.Second)
 			res := models.NewSuccessTaskResponse(id, task.Message)
 
 			if err = mq.Methods.Publish(

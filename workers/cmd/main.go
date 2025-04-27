@@ -1,25 +1,24 @@
 package main
 
 import (
-	"os"
-	"strconv"
-
+	"app.shared/pkg/env"
 	a "app.workers/internal/app"
+	"app.workers/internal/config"
 	"github.com/fatih/color"
 )
 
 func main() {
-	args := os.Args[1:]
-
-	amount := 3
-	if len(args) > 0 {
-		num, err := strconv.Atoi(args[0])
-		if err == nil {
-			amount = num
-		}
+	if err := config.InitConfig(); err != nil {
+		color.Red("Unable to init config: %s", err)
+		return
 	}
 
-	app := a.NewApp(amount, "amqp://admeanie:shabi@localhost:5672/")
+	amount := config.Config.Workers.Amount
+	app := a.NewApp(
+		amount, env.GetDefaultEnv(
+			"RABBITMQ_URL",
+			"amqp://admeanie:shabi@localhost:5672/",
+		))
 	if err := app.Run(); err != nil {
 		color.Red("Error starting app: %s", err.Error())
 		return
