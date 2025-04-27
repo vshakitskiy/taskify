@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"app.server/internal/mq"
 	"app.server/internal/repository"
@@ -11,10 +12,9 @@ import (
 )
 
 var (
-	ErrInvalidDuration = fmt.Errorf("invalid duration: duration must not be less than 1s")
-	ErrInvalidMessage  = fmt.Errorf("invalid message: message must not be empty")
-	ErrPublishFailed   = fmt.Errorf("publish failed")
-	replyTo            = "results"
+	ErrExecutionFailed         = fmt.Errorf("execution failed")
+	InternalErrExecutionFailed = fmt.Errorf("unable to execute task")
+	replyTo                    = "results"
 )
 
 type TaskService struct {
@@ -34,27 +34,40 @@ func (s *TaskService) ExecuteTask(
 	duration int64,
 	message string,
 ) (*ExecutionResult, error) {
-	fmt.Println(s.mq.TaskQueue.Consumers)
-
 	task := models.NewTask(message, int(duration))
-	id := uuid.New().String()
+	correlationID := uuid.New().String()
+
+	s.repo.AddTaskResponse(correlationID)
+	defer s.repo.DeleteTaskResponse(correlationID)
+
 	if err := s.mq.Methods.Publish(
 		ctx,
 		s.mq.TaskQueue,
 		task.ToJSON(),
-		&id,
+		&correlationID,
 		&replyTo,
 	); err != nil {
-		return nil, ErrPublishFailed
+		return nil, InternalErrExecutionFailed
 	}
-	s.repo.AddTaskResponse(id)
 
-	ch, _ := s.repo.GetTaskResponse(id)
-	res := <-ch
+	resCh, _ := s.repo.GetTaskResponse(correlationID)
 
-	fmt.Println(res)
+	select {
+	case res := <-resCh:
+		if res.ErrorCode != "" {
+			return nil, ErrExecutionFailed
+		}
 
-	return &ExecutionResult{}, nil
+		return &ExecutionResult{
+			Message:      res.Message,
+			CorelationId: correlationID,
+			WorkerNum:    res.WorkerNum,
+		}, nil
+	case <-time.After(time.Duration(duration+2) * time.Second):
+		return nil, InternalErrExecutionFailed
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 type ExecutionResult struct {

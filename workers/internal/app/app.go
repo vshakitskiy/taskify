@@ -43,10 +43,6 @@ func (a *App) Run() error {
 	color.Cyan("\nApplication started. Press Ctrl+C to exit.")
 	fmt.Println()
 
-	return a.gracefulShutdown()
-}
-
-func (a *App) gracefulShutdown() error {
 	shutdownChan := make(chan os.Signal, 1)
 	signal.Notify(shutdownChan, syscall.SIGINT, syscall.SIGTERM)
 

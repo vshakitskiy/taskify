@@ -7,18 +7,21 @@ import (
 type TaskResponse struct {
 	Message   string `json:"message,omitempty"`
 	Suceess   bool   `json:"success,required"`
+	WorkerNum int64  `json:"worker_num,required"`
 	ErrorCode string `json:"error_code,omitempty"`
 }
 
-func NewSuccessTaskResponse(message string) *TaskResponse {
+func NewSuccessTaskResponse(num int, message string) *TaskResponse {
 	return &TaskResponse{
-		Message: message,
-		Suceess: true,
+		WorkerNum: int64(num),
+		Message:   message,
+		Suceess:   true,
 	}
 }
 
-func NewErrorTaskResponse(errCode string) *TaskResponse {
+func NewErrorTaskResponse(num int, errCode string) *TaskResponse {
 	return &TaskResponse{
+		WorkerNum: int64(num),
 		Suceess:   false,
 		ErrorCode: errCode,
 	}

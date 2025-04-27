@@ -68,7 +68,7 @@ func worker(
 			if err != nil {
 				color.Red("[%d] Failed to unmarshal task %s: %s", id, del.CorrelationId, err)
 
-				res := models.NewErrorTaskResponse("ErrInvalidPayload")
+				res := models.NewErrorTaskResponse(id, "ErrInvalidPayload")
 				if err = mq.Methods.Publish(
 					pubCtx,
 					mq.ResultsQueue,
@@ -99,7 +99,7 @@ func worker(
 
 			rand := time.Duration(task.Timeout) * time.Second
 			time.Sleep(rand)
-			res := models.NewSuccessTaskResponse(task.Message)
+			res := models.NewSuccessTaskResponse(id, task.Message)
 
 			if err = mq.Methods.Publish(
 				pubCtx,

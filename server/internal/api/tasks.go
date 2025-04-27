@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 
 	"app.server/internal/service"
 	"app.server/pkg/pb"
@@ -34,7 +33,18 @@ func (h *TasksServiceHandler) ExecuteTask(
 	}
 
 	res, err := h.tasksService.ExecuteTask(ctx, req.DurationSeconds, req.Message)
-	fmt.Printf("%v, %v\n", res, err)
+	if err != nil {
+		switch err {
+		case service.ErrExecutionFailed:
+			return nil, status.Error(codes.FailedPrecondition, "execution failed")
+		case service.InternalErrExecutionFailed:
+			return nil, status.Error(codes.Internal, "failed to execute task")
+		}
+	}
 
-	return &pb.ExecuteTaskResponse{}, nil
+	return &pb.ExecuteTaskResponse{
+		Message:       res.Message,
+		CorrelationId: res.CorelationId,
+		WorkerNum:     res.WorkerNum,
+	}, nil
 }
