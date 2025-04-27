@@ -14,6 +14,7 @@ import (
 var (
 	ErrExecutionFailed         = fmt.Errorf("execution failed")
 	InternalErrExecutionFailed = fmt.Errorf("unable to execute task")
+	ErrQueueIsFull             = fmt.Errorf("queue is full")
 	replyTo                    = "results"
 )
 
@@ -37,7 +38,9 @@ func (s *TaskService) ExecuteTask(
 	task := models.NewTask(message, int(duration))
 	correlationID := uuid.New().String()
 
-	s.repo.AddTaskResponse(correlationID)
+	if err := s.repo.AddTaskResponse(correlationID); err != nil {
+		return nil, ErrQueueIsFull
+	}
 	defer s.repo.DeleteTaskResponse(correlationID)
 
 	if err := s.mq.Methods.Publish(

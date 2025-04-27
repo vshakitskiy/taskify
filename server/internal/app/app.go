@@ -51,7 +51,6 @@ func (a *App) Run() error {
 	tasksHandler := api.NewTasksServiceHandler(tasksService)
 
 	a.grpcServer = grpc.NewServer()
-
 	pb.RegisterTasksServiceServer(a.grpcServer, tasksHandler)
 
 	reflection.Register(a.grpcServer)

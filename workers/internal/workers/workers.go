@@ -2,7 +2,6 @@ package workers
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -89,13 +88,12 @@ func worker(
 				del.Ack(false)
 				continue
 			}
-			fmt.Printf(
-				"[%d]: %s - %dms (ID: %s)\n",
+			color.RGB(192, 192, 192).Printf(
+				"[W%d]: %s - %ds (ID: %s)\n",
 				id,
 				task.Message,
 				task.Timeout,
-				del.CorrelationId,
-			)
+				del.CorrelationId)
 
 			rand := time.Duration(task.Timeout) * time.Second
 			time.Sleep(rand)

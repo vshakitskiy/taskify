@@ -39,6 +39,8 @@ func (h *TasksServiceHandler) ExecuteTask(
 			return nil, status.Error(codes.FailedPrecondition, "execution failed")
 		case service.InternalErrExecutionFailed:
 			return nil, status.Error(codes.Internal, "failed to execute task")
+		case service.ErrQueueIsFull:
+			return nil, status.Error(codes.ResourceExhausted, "queue is full")
 		default:
 			return nil, status.Error(codes.Internal, "internal server error")
 		}

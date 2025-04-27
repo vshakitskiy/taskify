@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"sync"
 
 	"app.shared/models"
@@ -17,10 +18,14 @@ func NewTasksRepository() *TasksRepository {
 	}
 }
 
-func (r *TasksRepository) AddTaskResponse(id string) {
+func (r *TasksRepository) AddTaskResponse(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if len(r.tasks) >= 50 {
+		return fmt.Errorf("too many tasks")
+	}
 	r.tasks[id] = make(chan models.TaskResponse, 1)
+	return nil
 }
 
 func (r *TasksRepository) GetTaskResponse(id string) (chan models.TaskResponse, bool) {
