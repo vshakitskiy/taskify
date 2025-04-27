@@ -34,3 +34,9 @@ func (r *TasksRepository) DeleteTaskResponse(id string) {
 	defer r.mu.Unlock()
 	delete(r.tasks, id)
 }
+
+func (r *TasksRepository) Size() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.tasks)
+}

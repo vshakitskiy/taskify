@@ -63,7 +63,7 @@ func (s *TaskService) ExecuteTask(
 			CorelationId: correlationID,
 			WorkerNum:    res.WorkerNum,
 		}, nil
-	case <-time.After(time.Duration(duration+2) * time.Second):
+	case <-time.After(time.Duration(duration+int64(s.repo.Size())*30) * time.Second):
 		return nil, InternalErrExecutionFailed
 	case <-ctx.Done():
 		return nil, ctx.Err()

@@ -11,5 +11,6 @@ Task's queue system design, implemented with Golang and RabbitMQ
 - [X] Connect workers to RabbitMQ
 - [X] Create API for task submission
 - [ ] Develop CLI app for multiple API calls
+- [ ] Verify correct logging
+- [ ] Create shared config file to config synchronization
 - [ ] Fill root's readme and all submodules
-- [ ] Implement workers statuses
