@@ -11,7 +11,6 @@ import (
 	"app.server/pkg/pb"
 
 	"app.client/internal/config"
-	shconfig "app.shared/config"
 	"github.com/fatih/color"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -20,21 +19,18 @@ import (
 
 type App struct {
 	reqConf *config.RequestsConfig
-	conf    *shconfig.Config
 	resCh   chan string
 	errorCh chan error
 }
 
 func NewApp() (*App, error) {
-	conf, err := shconfig.ReadConfig()
-	if err != nil {
+	if err := config.InitConfig(); err != nil {
 		return nil, err
 	}
 
 	reqConfig := config.InitReqConfig()
 	return &App{
 		reqConf: reqConfig,
-		conf:    conf,
 		resCh:   make(chan string, reqConfig.NumTasks),
 		errorCh: make(chan error, reqConfig.NumTasks),
 	}, nil
@@ -47,7 +43,7 @@ func (a *App) Run() error {
 	fmt.Println()
 
 	conn, err := grpc.NewClient(
-		"localhost:"+string(a.conf.Server.GRPCPort),
+		"localhost:"+string(config.Config.Server.GRPCPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {

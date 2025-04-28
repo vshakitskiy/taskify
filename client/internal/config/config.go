@@ -3,6 +3,8 @@ package config
 import (
 	"flag"
 
+	shconfig "app.shared/config"
+
 	"github.com/fatih/color"
 )
 
@@ -34,6 +36,14 @@ type RequestsConfig struct {
 	MinDuration   int
 	MaxDuration   int
 	MessageFormat string
+}
+
+var Config *shconfig.Config
+
+func InitConfig() error {
+	conf, err := shconfig.ReadConfig()
+	Config = conf
+	return err
 }
 
 func InitReqConfig() *RequestsConfig {
